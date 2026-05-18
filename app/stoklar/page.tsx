@@ -7,6 +7,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { useSube } from '@/context/SubeContext'
 
 function StokYonetimi() {
   const [stoklar, setStoklar] = useState<any[]>([])
@@ -14,6 +15,7 @@ function StokYonetimi() {
   const [stok_turleri, setstok_turleri] = useState<any[]>([])
   const [birimler, setBirimler] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const { aktifSubeId, loading: subeLoading } = useSube()
   
   // Filtre State'leri
   const [aramaMetni, setAramaMetni] = useState('')
@@ -24,24 +26,34 @@ function StokYonetimi() {
   // Modal State'leri
   const [isStokModalOpen, setIsStokModalOpen] = useState(false)
   const [isBirimModalOpen, setIsBirimModalOpen] = useState(false)
+  const [isKategoriModalOpen, setIsKategoriModalOpen] = useState(false)
   const [duzenlemeId, setDuzenlemeId] = useState<string | null>(null)
   
   const [yeniBirimAdi, setYeniBirimAdi] = useState('')
+  const [yeniKategoriAdi, setYeniKategoriAdi] = useState('')
   const [form, setForm] = useState({
     urun_adi: '', stok_tur_id: '', kategori_id: '', birim_id: '', barkod: '',
     alis_fiyati: 0, satis_fiyati: 0, kdv_orani: 20, iskonto_orani: 0,
     mevcut_stok: 0, min_stok: 0, satis_ekraninda_goster: false, aciklama: ''
   })
 
-  useEffect(() => { fetchVeriler() }, [])
+  useEffect(() => {
+    if (!subeLoading) fetchVeriler()
+  }, [aktifSubeId, subeLoading])
 
   const fetchVeriler = async () => {
     setLoading(true)
-    const aktifSubeId = localStorage.getItem('aktifSubeId')
     try {
-      const { data: sData } = await supabase.from('stok_kartlari')
+      let stokQuery = supabase.from('stok_kartlari')
         .select('*, birimler(birim_adi), kategoriler(ad), stok_turleri(tur_adi)')
-        .eq('sube_id', aktifSubeId).order('urun_adi')
+        .order('urun_adi')
+
+      if (aktifSubeId) {
+        stokQuery = stokQuery.eq('sube_id', aktifSubeId)
+      }
+
+      const { data: sData, error: sError } = await stokQuery
+      if (sError) throw sError
 
       const { data: kData } = await supabase.from('kategoriler').select('*')
       const { data: bData } = await supabase.from('birimler').select('*')
@@ -57,11 +69,11 @@ function StokYonetimi() {
 
   const handleStokKaydet = async (e: React.FormEvent) => {
     e.preventDefault();
-    const aktifSubeId = localStorage.getItem('aktifSubeId');
+    const kayitSubeId = aktifSubeId || localStorage.getItem('aktifSubeId');
 
     const payload = { 
       ...form, 
-      sube_id: aktifSubeId,
+      sube_id: kayitSubeId,
       kategori_id: form.kategori_id || null, 
       stok_tur_id: form.stok_tur_id || null, 
       birim_id: form.birim_id || null,
@@ -98,9 +110,27 @@ function StokYonetimi() {
   };
 
   const handleBirimEkle = async () => {
-    if (!yeniBirimAdi) return
-    await supabase.from('birimler').insert([{ birim_adi: yeniBirimAdi }])
+    const birimAdi = yeniBirimAdi.trim()
+    if (!birimAdi) return
+    const { error } = await supabase.from('birimler').insert([{ birim_adi: birimAdi }])
+    if (error) {
+      toast.error("Birim eklenemedi: " + error.message)
+      return
+    }
     setYeniBirimAdi(''); fetchVeriler()
+  }
+
+  const handleKategoriEkle = async () => {
+    const kategoriAdi = yeniKategoriAdi.trim()
+    if (!kategoriAdi) return
+    const { error } = await supabase.from('kategoriler').insert([{ ad: kategoriAdi }])
+    if (error) {
+      toast.error("Kategori eklenemedi: " + error.message)
+      return
+    }
+    toast.success('Kategori eklendi')
+    setYeniKategoriAdi('')
+    fetchVeriler()
   }
 
   const stokSil = async (id: string, ad: string) => {
@@ -166,6 +196,7 @@ function StokYonetimi() {
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border flex justify-between items-center">
           <h1 className="text-4xl font-black italic uppercase tracking-tighter">Envanter Master</h1>
           <div className="flex gap-2">
+            <button onClick={() => setIsKategoriModalOpen(true)} className="px-6 py-4 bg-indigo-50 text-indigo-700 rounded-2xl font-black text-xs uppercase hover:bg-indigo-100">Kategori Tanımla</button>
             <button onClick={() => setIsBirimModalOpen(true)} className="px-6 py-4 bg-slate-100 rounded-2xl font-black text-xs uppercase hover:bg-slate-200">Birim Tanımla</button>
             <button onClick={() => { setDuzenlemeId(null); setForm({ urun_adi: '', stok_tur_id: '', kategori_id: '', birim_id: '', barkod: '', alis_fiyati: 0, satis_fiyati: 0, kdv_orani: 20, iskonto_orani: 0, mevcut_stok: 0, min_stok: 0, satis_ekraninda_goster: false, aciklama: '' }); setIsStokModalOpen(true); }} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-indigo-600">+ Yeni Ürün</button>
           </div>
@@ -250,6 +281,26 @@ function StokYonetimi() {
               {birimler.map(b => <div key={b.id} className="p-4 bg-slate-50 rounded-xl font-bold uppercase text-xs flex justify-between">{b.birim_adi}</div>)}
             </div>
             <button onClick={() => setIsBirimModalOpen(false)} className="w-full mt-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Kapat</button>
+          </div>
+        </div>
+      )}
+
+      {/* KATEGORİ MODAL */}
+      {isKategoriModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex justify-center items-center z-50">
+          <div className="bg-white p-10 rounded-[3rem] w-full max-w-md">
+            <h2 className="text-2xl font-black mb-6 uppercase italic">Kategoriler</h2>
+            <div className="flex flex-col gap-1 mb-6">
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-wider">Yeni Kategori Adı</label>
+              <div className="flex gap-2">
+                <input className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold outline-none ring-1 ring-slate-200/60 focus:ring-slate-900" value={yeniKategoriAdi} onChange={e => setYeniKategoriAdi(e.target.value)} placeholder="Örn: Unlu Mamul, İçecek..." />
+                <button onClick={handleKategoriEkle} className="bg-indigo-600 text-white px-6 rounded-2xl font-bold hover:bg-indigo-700">+</button>
+              </div>
+            </div>
+            <div className="space-y-2 max-h-60 overflow-auto pr-2">
+              {kategoriler.map(k => <div key={k.id} className="p-4 bg-slate-50 rounded-xl font-bold uppercase text-xs">{k.ad}</div>)}
+            </div>
+            <button onClick={() => setIsKategoriModalOpen(false)} className="w-full mt-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Kapat</button>
           </div>
         </div>
       )}
