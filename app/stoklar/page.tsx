@@ -298,4 +298,44 @@ function StokYonetimi() {
 
               <div className="flex flex-col gap-1">
                 <label className="text-[11px] font-black text-slate-400 uppercase ml-2 tracking-wider">Mevcut Stok Miktarı</label>
-                <input className="p-4 bg-slate-50 rounded-2xl font-bold border-none ring-1 ring-slate-200/6
+                <input className="p-4 bg-slate-50 rounded-2xl font-bold border-none ring-1 ring-slate-200/60 focus:ring-slate-900 outline-none" placeholder="0" type="number" value={form.mevcut_stok} onChange={e => setForm({...form, mevcut_stok: Number(e.target.value)})} />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-black text-slate-400 uppercase ml-2 tracking-wider">Kritik Stok Limiti</label>
+                <input className="p-4 bg-slate-50 rounded-2xl font-bold border-none ring-1 ring-slate-200/60 focus:ring-slate-900 outline-none" placeholder="0" type="number" value={form.min_stok} onChange={e => setForm({...form, min_stok: Number(e.target.value)})} />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-black text-slate-400 uppercase ml-2 tracking-wider">Alış Fiyatı (₺)</label>
+                <input className="p-4 bg-slate-50 rounded-2xl font-black text-slate-800 border-none ring-1 ring-slate-200/60 focus:ring-slate-900 outline-none" placeholder="0.00" type="number" value={form.alis_fiyati} onChange={e => setForm({...form, alis_fiyati: Number(e.target.value)})} />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-black text-indigo-600 uppercase ml-2 tracking-wider">Satış Fiyatı (₺)</label>
+                <input className="p-4 bg-slate-50 rounded-2xl font-black text-indigo-600 border-none ring-1 ring-slate-200/60 focus:ring-slate-900 outline-none" placeholder="0.00" type="number" value={form.satis_fiyati} onChange={e => setForm({...form, satis_fiyati: Number(e.target.value)})} />
+              </div>
+
+              <div className="col-span-2 flex flex-col gap-1">
+                <label className="text-[11px] font-black text-slate-400 uppercase ml-2 tracking-wider">KDV Oranı (%)</label>
+                <input className="p-4 bg-slate-50 rounded-2xl font-bold border-none ring-1 ring-slate-200/60 focus:ring-slate-900 outline-none" placeholder="20" type="number" value={form.kdv_orani} onChange={e => setForm({...form, kdv_orani: Number(e.target.value)})} />
+              </div>
+
+              <div className="col-span-2 p-4 bg-indigo-50/60 rounded-2xl flex items-center gap-3 ring-1 ring-indigo-100">
+                <input type="checkbox" id="pos_checkbox" className="w-4 h-4 accent-indigo-600" checked={form.satis_ekraninda_goster} onChange={e => setForm({...form, satis_ekraninda_goster: e.target.checked})} />
+                <label htmlFor="pos_checkbox" className="text-xs font-black uppercase text-indigo-900 select-none cursor-pointer">POS Satış Ekranında Göster</label>
+              </div>
+
+              <button type="submit" className="col-span-2 py-5 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-xl hover:bg-indigo-600 transition-all mt-2">
+                {duzenlemeId ? 'Değişiklikleri Kaydet' : 'Ürünü Envantere Ekle'}
+              </button>
+           
+              <button type="button" onClick={() => setIsStokModalOpen(false)} className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center mt-1">Vazgeç</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
