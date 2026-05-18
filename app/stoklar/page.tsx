@@ -339,3 +339,4 @@ function StokYonetimi() {
   )
 }
 
+export default StokYonetimi;
