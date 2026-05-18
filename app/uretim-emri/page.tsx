@@ -30,7 +30,10 @@ export default function UretimEmriSayfasi() {
 
   const verileriGetir = async () => {
     const { data: stoklar } = await supabase.from('stok_kartlari').select(`id, urun_adi, mevcut_stok, stok_turleri(tur_adi)`)
-    setMamuller(stoklar?.filter(s => s.stok_turleri?.tur_adi?.toUpperCase().includes("MAMUL")) || [])
+    setMamuller(stoklar?.filter(s => {
+      const stokTuru = Array.isArray(s.stok_turleri) ? s.stok_turleri[0] : s.stok_turleri
+      return stokTuru?.tur_adi?.toUpperCase().includes("MAMUL")
+    }) || [])
     
     const { data: subeData } = await supabase.from('subeler').select('*').order('sube_adi')
     setSubeler(subeData || [])
